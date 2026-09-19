@@ -1,0 +1,17 @@
+return {
+  {type="oak_lab",name="OAK_LAB",x=67.75,y=184,scale=1,city=true},
+  {type="house_small",name="PLAYER_HOME",x=50.75,y=173.875,scale=1,city=true},
+  {type="house_small",name="RIVAL_HOME",x=68.625,y=174.25,scale=1,city=true},
+  {type="tree_cluster",name="PALLET_WOODS",x=29,y=171,radius=10,density=0.42},
+  {type="tree_cluster",name="ROUTE_1_WEST",x=32,y=128,radius=18,density=0.46},
+  {type="tree_cluster",name="ROUTE_1_EAST",x=92,y=119,radius=17,density=0.4},
+  {type="rock",name="SOUTH_HILL",x=25,y=151,scale=2},
+  {type="mountain_peak",name="WEST_HILL",x=17,y=84,scale=1.1},
+  {type="house_large",name="VIRIDIAN_HOUSE_W",x=65,y=56,scale=1,city=true},
+  {type="house_small",name="VIRIDIAN_HOUSE_S",x=64.2,y=66,scale=1,city=true},
+  {type="pokemon_center",name="VIRIDIAN_CENTER",x=68.4,y=78.2,scale=1,city=true},
+  {type="poke_mart",name="VIRIDIAN_MART",x=78.8,y=72.2,scale=1,city=true},
+  {type="gym",name="VIRIDIAN_GYM",x=77.4,y=49,scale=1,city=true},
+  {type="tree_cluster",name="VIRIDIAN_GREEN",x=91,y=49,radius=12,density=0.34},
+  {type="tree_cluster",name="NORTH_WOODS",x=37,y=28,radius=18,density=0.48},
+}
