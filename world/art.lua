@@ -11,7 +11,9 @@ return {
  lod_pixels={10,11,19,17,13,13,99},
  camera={shear=.10, slope=.08, depth=.54}, -- DEBUG_TOP only
  camera_modes={
-  CHASE={pitch=22,fov=54,back=65,above=45,look_ahead=90,far=1900},
+  -- Default third-person framing: closer and slightly higher behind Dragonite.
+  -- The Town Map remains readable ahead; HIGH_SOAR preserves the old wide view.
+  CHASE={pitch=23,fov=50,back=52,above=34,look_ahead=102,flight_sprite_size=34,far=1900},
   HIGH_SOAR={pitch=25,fov=58,back=105,above=75,look_ahead=150,far=2400},
  },
  ramps={
@@ -24,11 +26,14 @@ return {
   {{.76,.82,.72},{.48,.65,.64},{.26,.43,.46},{.10,.19,.23}},
   {{.94,.85,.69},{.77,.42,.32},{.57,.23,.21},{.23,.18,.16}},
   {{.88,.89,.75},{.45,.59,.71},{.24,.36,.55},{.15,.20,.28}},
+  {{.88,.78,.93},{.62,.42,.72},{.42,.24,.54},{.20,.13,.28}}, -- Lavender violet
+  {{.97,.86,.52},{.81,.61,.25},{.57,.39,.15},{.28,.22,.13}}, -- Saffron gold
+  {{.88,.91,.73},{.55,.72,.49},{.31,.51,.32},{.15,.29,.20}}, -- Celadon teal / green
  },
  terrain={
   {cols=1,tiles={20}}, -- wave motif
   {cols=2,tiles={0,0,0,57}}, -- regular short grass tufts
-  {cols=2,tiles={80,81,64,65}}, -- Red tree crown
+  {cols=2,tiles={0,0,0,57}}, -- dark forest floor; 3D canopies carry tree identity
   {cols=2,tiles={58,59,58,59}}, -- rock face
   {cols=2,tiles={0,0,57,0}}, -- sparse shore
   {cols=2,tiles={0,0,0,57}}, -- town earth
@@ -46,4 +51,3 @@ return {
  trees={cols=2,tiles={80,81,64,65}},
  rock={cols=2,tiles={58,59}},
 }
-

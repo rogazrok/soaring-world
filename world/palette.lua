@@ -10,4 +10,7 @@ return {
   {.12,.24,.27}, -- water ripple
   {.70,.20,.17}, -- Pokémon Center red
   {.17,.31,.65}, -- Poké Mart blue
+  {.46,.25,.58}, -- Lavender / Pokémon Tower violet
+  {.78,.56,.18}, -- Saffron high-rise roof gold
+  {.34,.58,.39}, -- Celadon teal / green roof
 }

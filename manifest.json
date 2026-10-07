@@ -1,15 +1,18 @@
 {
   "id": "soaring_world_red",
-  "name": "Soaring World Red - Experimental",
-  "version": "0.5.1",
+  "name": "Soaring World Red",
+  "version": "1.0.0",
   "entry": "main.lua",
   "assets_transforms": "transforms.lua",
   "api": 2,
-  "game_version": ">=0.2.52 <0.3.0",
-  "games": ["red"],
+  "game_version": ">=0.2.52 <0.4.0",
+  "games": [
+    "red"
+  ],
   "profile": "overhaul",
   "category": "TOOL",
-  "experimental": true,
-  "permissions": ["engine_internals"],
-  "description": "Stylized data-driven Soaring World prototype. Red only; no landing or save writes."
+  "permissions": [
+    "engine_internals"
+  ],
+  "description": "Adds map-aware Kanto flight, visited-city landings and step-spawned Hidden Areas with saved per-instance reward profiles."
 }
