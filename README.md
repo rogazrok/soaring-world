@@ -1,4 +1,4 @@
-# Soaring World Red
+# Soaring World
 
 **Version 1.0.0 · Pokémon Red · gen1recomp**
 
