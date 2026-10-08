@@ -1,6 +1,7 @@
 return function(mod)
-  -- The manager can force an unsupported game; keep this experiment Red-only.
-  if require("src.core.GameVersion").get() ~= "red" then return end
+  -- Keep forced unsupported games out of the Gen 1 implementation.
+  local edition=require("src.core.GameVersion").get()
+  if edition~='red' and edition~='blue' and edition~='yellow' then return end
   local function module(name)
     return assert(loadstring(assert(mod:read(name .. ".lua")), "@soaring/" .. name))()
   end
@@ -15,6 +16,7 @@ return function(mod)
   local Actions = module("soaring_actions")
   local Progression = module("progression")
   local HiddenAreas = module("hidden_areas")
+  local EditionEncounters = module("edition_encounters")
   local HiddenDebug = module("hidden_debug")
   local DragonTakeoff = module("dragon_takeoff")
   local LoadingAnimation = module("loading_animation")
@@ -23,10 +25,13 @@ return function(mod)
   local DayNight = module("day_night")
   local LoadingBuilder = module("loading_builder")
   local SoaringMap = module("soaring_map")
-  local hiddenRegistry = HiddenAreas.load(function(path) return mod:read(path) end)
+  local definitions=assert(loadstring(assert(mod:read('world/hidden_areas.lua'))))()
+  definitions=EditionEncounters.apply(definitions,edition,module('world/encounter_profiles'))
+  local hiddenRegistry = HiddenAreas.load(function(path) return mod:read(path) end,definitions)
   -- Recover pre-0.10.19 fixed rewards before any map/NPC is restored.
   -- Existing item selections and claim bits are left intact.
   mod.migrations:add('0.10.19',HiddenAreas.migrateLegacyRewards)
+  mod.migrations:add('1.0.1',HiddenAreas.migrateRepeatableSummit)
   HiddenAreas.register(mod,hiddenRegistry)
   -- Native arrival tails and battle restoration resolve music by map ID.
   for _,area in ipairs(hiddenRegistry.areas) do
@@ -181,6 +186,8 @@ return function(mod)
       if stylized then
         -- Initialize before the first flight frame; no temporary daytime flash.
         self.dayNight:enter(currentEngineTimeOfDay())
+        self.spawnNotice=HiddenAreas.spawnNotice(mod,hiddenRegistry)
+        self.spawnNoticeRemaining=6
         self.soaringSong=Music.special(self.game.data,'surf') or 'Music_Surfing'
         Music.play(self.game.data,self.soaringSong,true,{reason='soaring_world'})
       end
@@ -301,6 +308,18 @@ return function(mod)
     end
     function screen:update(dt)
       local input = self.game.input
+      if self.spawnNotice and self.spawnNoticeDrawn then
+        self.spawnNoticeDrawn=false
+        if not self.spawnNoticeCried then
+          self.spawnNoticeCried=true
+          require('src.core.Sound').playCry(self.game.data,'DRAGONITE')
+        end
+        self.spawnNoticeRemaining=self.spawnNoticeRemaining-math.max(0,math.min(dt or 0,.1))
+        if self.spawnNoticeRemaining<=0 then
+          HiddenAreas.acknowledgeNotice(mod,hiddenRegistry,self.spawnNotice)
+          self.spawnNotice=nil
+        end
+      end
       if stylized and self.dayNight then self.dayNight:update(currentEngineTimeOfDay(),dt,self.world.config) end
       if self.effects then self.effects:update(self.flight,dt) end
       if not self.armed then self.armed = not anyDown(input); return end

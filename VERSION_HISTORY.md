@@ -1,5 +1,20 @@
 # Version history
 
+## 1.0.1 — Red, Blue and Yellow
+
+- Automatic encounter profiles for all three Generation I games.
+- Yellow's Pikachu hides during Dragonite cinematics and returns on landing.
+- Rocky Summit is repeatable; an upgrade preserves the active visit's old loot.
+- Forgotten Pier has a 20% chance per new instance after all five ordinary
+  areas have been discovered, until the one-time encounter is consumed.
+- New instances give a brief flight banner and Dragonite cry. The special
+  expedition has a different regional hint.
+- Denser world-space clouds with soft edges and adjustable inside density.
+- Visual fix: fresh scattered clouds on every takeoff, varied cloud silhouettes,
+  stepped exterior terrain and actual house/Center models in distant scenery.
+- Optional post-League Blue USA and Yellow USA test saves.
+- The authored world map and approved palette B are preserved.
+
 ## 1.0.0 — Public release
 
 The edited Kanto world and the accumulated flight, discovery and visual work

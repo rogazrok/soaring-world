@@ -1,13 +1,13 @@
 {
   "id": "soaring_world_red",
   "name": "Soaring World Red",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "main.lua",
   "assets_transforms": "transforms.lua",
   "api": 2,
-  "game_version": ">=0.2.52 <0.4.0",
+  "game_version": ">=0.3.63 <0.4.0",
   "games": [
-    "red"
+    "red", "blue", "yellow"
   ],
   "profile": "overhaul",
   "category": "TOOL",

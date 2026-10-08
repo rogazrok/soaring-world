@@ -267,13 +267,14 @@ vec4 effect(vec4 color,Image tex,vec2 uv,vec2 screen) {
           local shade=f.normal[3]>.2 and 1 or (facingY>.2 and .95 or .8)
           local col=f.region=='ROOF' and (model.roof_col or 5) or (f.region=='DETAILS' and (model.detail_col or model.wall_col or 4) or (f.region=='DOOR' and (model.door_col or model.wall_col or 4) or (model.wall_col or 4)))
           local category=(o.type:find('tree') or o.type:find('forest')) and 'vegetation' or ((o.type:find('rock') or o.type=='cave') and 'details' or 'buildings')
-          add(points,uvs,col,shade,textures[archetype][f.region],o.name,category,nil,Stylized.objectKey(o))
+          add(points,uvs,col,shade,textures[archetype][f.region],o.backdrop and '__BACKDROP__' or o.name,category,nil,Stylized.objectKey(o))
           if yieldBuild then buildCheckpoint(1) end
         end
       end
     end
     for _,o in ipairs(w.objects) do addGeneratedObject(o) end
     for _,o in ipairs(w.generatedDetails or {}) do addGeneratedObject(o) end
+    for _,o in ipairs(w.backdropDressing and w.backdropDressing.models or {}) do addGeneratedObject(o) end
   end
   local function finalize()
     self.batches={};self.verticesByObject={}

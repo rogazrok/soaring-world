@@ -34,6 +34,8 @@ function UI:draw(screen)
   g.push('all');g.setCanvas(self.canvas);g.origin();g.clear(0,0,0,0)
   local debug=screen.flight.cameraMode=='DEBUG_TOP' and c
   local banner=not debug and c and c.state=='BANNER' and c.zone
+  local hint=not debug and screen.spawnNotice and c and c.state~='CONFIRM'
+    and not c.error and not c.notice and screen.spawnNotice
   if debug then
     for _,loc in ipairs(c.locations) do if loc.enabled then
       local x,y,s=debugPoint(screen.world,loc.center.x,loc.center.y,0)
@@ -44,6 +46,11 @@ function UI:draw(screen)
       g.setColor(1,1,1,.9);g.rectangle('fill',0,8,160,8);g.setColor(0,0,0,1)
       text(self.font,'ZONE '..c.nearestBanner.name,0,8)
     end
+  elseif hint then
+    g.setColor(1,1,1,1);g.rectangle('fill',0,0,160,40)
+    box(self.font,0,0,20,5);g.setColor(0,0,0,1)
+    for i,line in ipairs(hint.lines) do centered(self.font,line,i,160) end
+    screen.spawnNoticeDrawn=true
   elseif banner then
     g.setColor(1,1,1,1);g.rectangle('fill',0,0,144,24)
     box(self.font,0,0,18,3);g.setColor(0,0,0,1);centered(self.font,banner.name,1,144)
@@ -76,7 +83,7 @@ function UI:draw(screen)
   g.pop();g.push('all');g.origin();g.setColor(1,1,1,1)
   local width,height=g.getDimensions();local scale=math.min(height/200,width/300)
   if debug then present(g,self.canvas,width,height)
-  elseif banner then present(g,self.canvas,width,height,nil,8*scale) end
+  elseif banner or hint then present(g,self.canvas,width,height,nil,8*scale) end
   if prompt then
     local margin=math.max(8,math.floor(10*scale+.5));local bottom=math.max(margin,math.floor(13*scale+.5))
     g.draw(self.actionCanvas,math.floor(width-prompt.w*scale-margin+.5),

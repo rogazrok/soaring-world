@@ -1,0 +1,12 @@
+{
+  "BLUE_USA_POST_LEAGUE.sav": {
+    "bytes": 32768,
+    "sha256": "a15fdb106d40da3efc8545d21132ee1dbfb087e004f4ef84ce8ea5d1d31d58ee",
+    "checksums_verified": 15
+  },
+  "YELLOW_USA_POST_LEAGUE.sav": {
+    "bytes": 32768,
+    "sha256": "f579ea61e4eb3d2b0c8be25b9dadc735c803173d07f72c538ff54eaf378262df",
+    "checksums_verified": 15
+  }
+}

@@ -35,13 +35,16 @@ function M.build(w,ground,biome,emit,yieldBuild)
     local b=material(biome(sx,sy));local z=ground(sx,sy)
     if b~=1 then
       local blend=clamp((math.sqrt(dx*dx+dy*dy)-stride)/(stride*8),0,1)
-      z=math.max(c.water_height,z+(math.sin(x*.035+y*.012)+math.sin(x*.011-y*.027)*.55)*c.max_height*.12*blend)
+      -- Keep the sampled authored terraces, then add relief in the same
+      -- six-unit steps used by mainland ridges instead of a smooth wave.
+      local relief=(math.sin(x*.035+y*.012)+math.sin(x*.011-y*.027)*.55)*c.max_height*.12*blend
+      z=math.max(c.water_height,z+math.floor(relief/6+.5)*6)
     end
     return z,b
   end
   -- Sparse, reproducible scenery only. Never use gameplay RNG or add destinations.
   local baseSample=sample
-  local scenery={lakes={},houses={},trees={}}
+  local scenery={lakes={},houses={},trees={},models={}}
   w.backdropDressing=scenery
   if c.backdrop_dressing_enabled~=false then
     local seed=c.backdrop_dressing_seed or 260
@@ -112,10 +115,10 @@ function M.build(w,ground,biome,emit,yieldBuild)
   end
   local function rect(x0,y0,x1,y1)
     local z,b,lake=sample((x0+x1)/2,(y0+y1)/2)
-    -- Every water top is horizontal, including ocean and elevated inland water.
-    -- A water material can never inherit a neighbouring mountain vertex.
-    local zz=b==1 and {z,z,z,z} or {sample(x0,y0),sample(x1,y0),sample(x1,y1),sample(x0,y1)}
-    patch(x0,y0,x1,y1,zz,b,lake)
+    -- Exterior land uses horizontal terraces just like the playable cells.
+    -- Shared-edge closure below supplies the vertical risers between them.
+    -- Ocean and elevated inland water retain their own horizontal level.
+    patch(x0,y0,x1,y1,{z,z,z,z},b,lake)
   end
   local function negativeAxis(enabled)
     local a={0};if not enabled then return a end
@@ -142,17 +145,21 @@ function M.build(w,ground,biome,emit,yieldBuild)
       if y0==-1 and y1==0 and x0>=0 and x1<=w.width then
         for x=x0,x1-1 do
           local b=material(biome(x,0));local z=ground(x,0)
-          local a=sample(x0,-1);local d=sample(x1,-1)
-          local z0=a+(d-a)*(x-x0)/(x1-x0);local z1=a+(d-a)*(x+1-x0)/(x1-x0)
-          patch(x,-1,x+1,0,b==1 and {z,z,z,z} or {z0,z1,z,z},b);if checkpoint then checkpoint(1) end
+          patch(x,-1,x+1,0,{z,z,z,z},b);if checkpoint then checkpoint(1) end
         end
       elseif x0==-1 and x1==0 and y0>=0 and y1<=w.depth then
         for y=y0,y1-1 do
           local b=material(biome(0,y));local z=ground(0,y)
-          local a=sample(-1,y0);local d=sample(-1,y1)
-          local z0=a+(d-a)*(y-y0)/(y1-y0);local z1=a+(d-a)*(y+1-y0)/(y1-y0)
-          patch(-1,y,0,y+1,b==1 and {z,z,z,z} or {z0,z,z,z1},b);if checkpoint then checkpoint(1) end
+          patch(-1,y,0,y+1,{z,z,z,z},b);if checkpoint then checkpoint(1) end
         end
+      elseif (x0<0 and x1>=-13 and y0>=0 and y1<=w.depth)
+          or (y0<0 and y1>=-13 and x0>=0 and x1<=w.width)
+          or (x0<0 and y0<0 and x1>=-13 and y1>=-13) then
+        -- A short fine band carries individual edge terraces into the scenery;
+        -- coarse distant cells must not expose a new straight wall at the seam.
+        for y=y0,y1-1 do for x=x0,x1-1 do
+          rect(x,y,x+1,y+1);if checkpoint then checkpoint(1) end
+        end end
       else rect(x0,y0,x1,y1);if checkpoint then checkpoint(1) end end
     end
     if checkpoint then checkpoint(1) end
@@ -206,10 +213,20 @@ function M.build(w,ground,biome,emit,yieldBuild)
     end
     detail(top,topCol,roofTile,roofMotif)
   end
-  for _,o in ipairs(scenery.houses) do
+  for i,o in ipairs(scenery.houses) do
     local x,y=o.x*s,o.y*s
-    box(x,y,o.z-2,17,13,2,6,6,c.material_tiles.cliff,c.material_tiles.cliff)
-    box(x,y,o.z,17,13,11,5,8,nil,nil,w.art.roofs.house,w.art.facade)
+    local centre=i==2 or i==5
+    local archetype=centre and 'center' or 'house'
+    if w.buildings and w.buildings.models and w.buildings.models[archetype] then
+      -- Use the exact gallery models and generated region textures. Their
+      -- ground anchor is the exterior terrace, never the clamped playable map.
+      scenery.models[#scenery.models+1]={name='__BACKDROP_BUILDING_'..i,
+        type=centre and 'pokemon_center' or 'house_small',archetype=archetype,
+        x=o.x,y=o.y,z=o.z+.03,z_mode='free',rotation=0,scale=1,backdrop=true}
+    else
+      box(x,y,o.z-2,17,13,2,6,6,c.material_tiles.cliff,c.material_tiles.cliff)
+      box(x,y,o.z,17,13,11,5,8,nil,nil,w.art.roofs.house,w.art.facade)
+    end
   end
   for i,o in ipairs(scenery.trees) do
     local x,y=o.x*s,o.y*s;local h=11+(i%3)*1.5

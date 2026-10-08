@@ -18,11 +18,15 @@ return {areas={
     {
       id='ROCKY_SUMMIT_01',name='ROCKY SUMMIT',saveKey='rocky_summit_01',kind='regular',
       music='Music_Dungeon3',mapId='SWR_ROCKY_SUMMIT_01',mapIndex=1001,template='summit',marker='summit',
-      tags={'mountain'},weight=2,repeatable=false,
+      tags={'mountain'},weight=2,repeatable=true,
       visibleWhen='active',landableWhen='active',completeWhen='exit',
       approachRadius=78,landingRadius=38,landingPoint={x=9,y=12},
       reward={item='MAX_REVIVE',index=1,x=12,y=8},
-      
+      rewardProfiles={
+        common={weight=70,items={'GREAT_BALL','SUPER_POTION','FULL_HEAL','SUPER_REPEL','ESCAPE_ROPE'}},
+        rare={weight=25,items={'MAX_REVIVE','MAX_REVIVE','ULTRA_BALL','HYPER_POTION','MAX_REPEL','MAX_ETHER','ELIXER','FIRE_STONE'}},
+        special={weight=5,items={'MAX_REVIVE','MAX_REVIVE','FULL_RESTORE','RARE_CANDY','PP_UP','FIRE_STONE'}},
+      },
       encounterPool={{species='CHARMANDER',weight=5,excludeIfStarter=true,fallbackSpecies='GEODUDE'},{species='GEODUDE',weight=19},{species='ZUBAT',weight=18},{species='MACHOP',weight=16},{species='ONIX',weight=10},{species='SANDSHREW',weight=12},{species='SANDSLASH',weight=5},{species='MAGMAR',weight=7},{species='MACHAMP',weight=3},{species='GOLEM',weight=3},{species='RHYHORN',weight=2}},
       encounterProfiles={{id='common',rate=18,level=22,maxLevel=30,species={'CHARMANDER','GEODUDE','ZUBAT','MACHOP','ONIX','SANDSHREW','SANDSLASH','MAGMAR','MACHAMP','GOLEM','RHYHORN'}},{id='rare',rate=18,level=31,maxLevel=39,species={'CHARMANDER','GEODUDE','ZUBAT','MACHOP','ONIX','SANDSHREW','SANDSLASH','MAGMAR','MACHAMP','GOLEM','RHYHORN'}},{id='special',rate=18,level=40,maxLevel=45,species={'CHARMANDER','GEODUDE','ZUBAT','MACHOP','ONIX','SANDSHREW','SANDSLASH','MAGMAR','MACHAMP','GOLEM','RHYHORN'}}},
     },

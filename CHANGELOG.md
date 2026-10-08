@@ -1,9 +1,11 @@
-# Soaring World Red 1.0.0
+# Soaring World Red 1.0.1
 
-- Explore the edited Kanto world from Dragonite's back.
-- Discover five repeatable Hidden Areas and additional secrets.
-- Receive the Dragon Call from Lance after becoming Champion.
-- Enjoy palette B, a panoramic horizon, day/night lighting and atmosphere effects.
-- Includes fixes for saved rewards, repeat-visit item recovery and battle-return music.
+Supports Pokémon Red, Blue and Yellow with edition-specific Hidden Area
+encounters, Yellow follower handling and repeatable Rocky Summit rewards.
+Adds discovery hints, a 20% unlocked Forgotten Pier spawn chance and denser
+clouds. Includes optional post-League Blue USA and Yellow USA test saves.
 
-See VERSION_HISTORY.md for the development milestones.
+Visual fix: fresh cloud positions on each takeoff, irregular cloud silhouettes,
+terraced exterior terrain and existing 3D house/Center models in distant scenery.
+
+See VERSION_HISTORY.md and README.md for changes, installation and test limits.

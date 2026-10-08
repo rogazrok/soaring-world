@@ -1,12 +1,15 @@
 -- World-space cloud banks: a few sorted transparent billboards, not ray marching.
 -- Positions and density never depend on player/camera position or heading.
 local M={};local C={};C.__index=C
-local format={{'VertexPosition','float',3},{'VertexTexCoord','float',2},{'VertexColor','float',4}}
+local format={{'VertexPosition','float',3},{'VertexTexCoord','float',2},{'VertexColor','float',4},{'VertexCloudShape','float',2}}
 local source=[[
+varying vec2 CloudShape;
 #ifdef VERTEX
+attribute vec2 VertexCloudShape;
 uniform vec3 Camera;uniform vec2 Direction;uniform vec2 Pitch;
 uniform float Focal;uniform float Quality;uniform float Far;uniform vec2 FrameCenter;
 vec4 position(mat4 tp,vec4 v) {
+  CloudShape=VertexCloudShape;
   vec3 d=v.xyz-Camera;
   float side=dot(d.xy,vec2(-Direction.y,Direction.x));
   float forward=dot(d.xy,Direction);
@@ -17,9 +20,20 @@ vec4 position(mat4 tp,vec4 v) {
 }
 #endif
 #ifdef PIXEL
+float lobe(vec2 p,vec2 centre,vec2 radius) {
+  vec2 d=(p-centre)/radius;
+  return 1.0-smoothstep(0.25,1.0,dot(d,d));
+}
 vec4 effect(vec4 color,Image tex,vec2 uv,vec2 screen) {
   vec2 q=uv*2.0-1.0;
-  float edge=1.0-smoothstep(0.18,1.0,dot(q,q));
+  // Overlapping asymmetric lobes form a cloud silhouette, rather than a disk.
+  // Two stable shape values per card vary the crown, shoulders and underside.
+  float a=CloudShape.x,b=CloudShape.y;
+  float edge=lobe(q,vec2((a-.5)*.20,(b-.5)*.16),vec2(.62,.60));
+  edge=max(edge,lobe(q,vec2(-.49,.03+a*.20),vec2(.43,.35+b*.11)));
+  edge=max(edge,lobe(q,vec2(.46,-.10+b*.25),vec2(.42,.36+a*.10)));
+  edge=max(edge,lobe(q,vec2(-.18+a*.38,-.39),vec2(.30+b*.15,.39)));
+  edge=max(edge,lobe(q,vec2(.10-b*.28,.36),vec2(.40,.29+a*.10)));
   // Broad soft masses; no noise texture, realistic lighting or colour grading.
   float softness=0.82+0.18*(1.0-uv.y);
   return vec4(color.rgb*softness,color.a*edge);
@@ -27,20 +41,44 @@ vec4 effect(vec4 color,Image tex,vec2 uv,vec2 screen) {
 #endif
 ]]
 local function hash(i,s) return ((i*173+s*257)%997)/997 end
+-- A private generator: cloud layout must not consume the game's encounter RNG.
+local generation=0
+local function randomSequence(seed)
+  local state=math.floor(math.abs(seed))%2147483646+1
+  return function() state=(state*48271)%2147483647;return state/2147483647 end
+end
 local function clamp(v,a,b) return math.max(a,math.min(b,v)) end
 local function smooth(a,b,v) local t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t) end
-function M.new(world)
+function M.new(world,seed)
   local ok,shader=pcall(love.graphics.newShader,source)
   local self=setmetatable({world=world,supported=ok,error=not ok and tostring(shader) or nil,banks={},meshes={}},C)
   if not ok then print('[Soaring] World clouds unavailable; screen clouds retained: '..self.error);return self end
   self.shader=shader
-  -- The same first banks exist at every quality. No camera-following recycling.
+  generation=generation+1
+  self.seed=seed or (os.time()+math.floor(os.clock()*1000000)+generation*104729)
+  local random=randomSequence(self.seed)
+  -- Best-candidate scattering keeps even LOW's first ten banks spread out.
+  -- A fresh field is created on takeoff, never on camera movement/quality change.
   for i=1,24 do
-    local x=(.05+.90*hash(i,3))*world.maxX;local y=(.05+.90*hash(i,7))*world.maxY
+    local x,y,best=nil,nil,-1
+    for candidate=1,32 do
+      local cx=(.05+.90*random())*world.maxX;local cy=(.05+.90*random())*world.maxY
+      local nearest=math.huge
+      for _,b in ipairs(self.banks) do
+        local dx,dy=(cx-b.x)/world.maxX,(cy-b.y)/world.maxY
+        nearest=math.min(nearest,dx*dx+dy*dy)
+      end
+      if nearest>best then x,y,best=cx,cy,nearest end
+    end
     local mist=i%5==0;local ground=world:getGroundHeight(x,y)
-    self.banks[i]={id=i,x=x,y=y,z=ground+(mist and 58 or 104+hash(i,11)*62),
+    local bank={id=i,x=x,y=y,z=ground+(mist and 58 or 104+hash(i,11)*62),
       rx=mist and 210 or 100+hash(i,13)*65,ry=mist and 130 or 80+hash(i,17)*50,
-      rz=mist and 35 or 58+hash(i,19)*20,mist=mist}
+      rz=mist and 35 or 78+hash(i,19)*27,mist=mist,puffs={}}
+    for j=1,5 do
+      bank.puffs[j]={(random()-.5)*bank.rx*.95,(random()-.5)*bank.ry*.95,(random()-.5)*bank.rz*.65,
+        random(),random(),.85+random()*.40,.80+random()*.40}
+    end
+    self.banks[i]=bank
   end
   -- Fixed upper bound, reused each frame; at most 24 banks x 5 cards.
   for i=1,2 do self.meshes[i]=love.graphics.newMesh(format,24*5*6,'triangles','stream') end
@@ -63,7 +101,7 @@ function C:density(point,time,cfg)
     local d=((point[1]-x)/b.rx)^2+((point[2]-y)/b.ry)^2+((point[3]-z)/b.rz)^2
     density=density+(1-smooth(.08,1,d))*fade*(b.mist and .09 or cfg.cloud_density)
   end
-  return math.min(.28,density)
+  return math.min(.72,density)
 end
 function C:prepare(ctx,time,cfg)
   self.back={};self.front={};self.stats={cards=0,back=0,front=0}
@@ -75,18 +113,18 @@ function C:prepare(ctx,time,cfg)
     local b=self.banks[i];local x,y,z,fade=self:position(b,time,cfg)
     for j=1,cfg.cloudPuffs do
       local seed=i*7+j
-      local px=x+(hash(seed,23)-.5)*b.rx*.95
-      local py=y+(hash(seed,29)-.5)*b.ry*.95
-      local pz=z+(hash(seed,31)-.5)*b.rz*.65
+      local puff=b.puffs[j]
+      local px,py,pz=x+puff[1],y+puff[2],z+puff[3]
       local dx,dy,dz=px-cam[1],py-cam[2],pz-cam[3]
       local depth=(dx*fx+dy*fy)*cp-dz*sp
-      local width=b.rx*(.66+hash(seed,37)*.22);local height=b.rz*(.80+hash(seed,41)*.20)
+      local width=b.rx*(.66+hash(seed,37)*.22)*puff[6];local height=b.rz*(.80+hash(seed,41)*.20)*puff[7]
       local distance=math.sqrt(dx*dx+dy*dy+dz*dz)
       -- Fade the nearest card away before the near-plane can slice its edge.
-      local alpha=cfg.cloud_opacity*fade*smooth(5,35,depth)*smooth(12,55,distance)*(1-smooth(ctx.far*.75,ctx.far,depth))
+      local opacity=b.mist and math.min(cfg.cloud_opacity,.11) or cfg.cloud_opacity
+      local alpha=opacity*fade*smooth(5,35,depth)*smooth(12,55,distance)*(1-smooth(ctx.far*.75,ctx.far,depth))
       if b.mist then alpha=alpha*.48 end
       if depth>5 and depth<ctx.far and alpha>.001 then
-        cards[#cards+1]={x=px,y=py,z=pz,width=width,height=height,depth=depth,alpha=alpha,id=seed}
+        cards[#cards+1]={x=px,y=py,z=pz,width=width,height=height,depth=depth,alpha=alpha,id=seed,shape=puff}
       end
     end
   end
@@ -96,7 +134,7 @@ function C:prepare(ctx,time,cfg)
     for _,uv in ipairs({{0,0},{1,0},{1,1},{0,0},{1,1},{0,1}}) do
       local sx,sy=(uv[1]*2-1)*c.width,(1-uv[2]*2)*c.height
       target[#target+1]={c.x+right[1]*sx+up[1]*sy,c.y+right[2]*sx+up[2]*sy,c.z+up[3]*sy,
-        uv[1],uv[2],.94,.96,.94,c.alpha}
+        uv[1],uv[2],.94,.96,.94,c.alpha,c.shape[4],c.shape[5]}
     end
   end
   self.stats.back=#self.back/6;self.stats.front=#self.front/6;self.stats.cards=#cards

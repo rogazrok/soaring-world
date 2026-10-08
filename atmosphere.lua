@@ -2,7 +2,7 @@
 local M={}
 local defaults={enabled=true,quality='MEDIUM',haze=true,animated_water=true,
   cloud_shadows=true,directional_shading=false,wind_streaks=true,
-  cloud_mode='WORLD',local_mist=true,cloud_density=.18,cloud_opacity=.11,cloud_velocity={2.2,.8},
+  cloud_mode='WORLD',local_mist=true,cloud_density=.58,cloud_opacity=.48,cloud_velocity={2.2,.8},
   haze_start=650,haze_end=2200,haze_intensity=.16,water_speed=.008,water_blend=.18,
   shadow_scale=480,shadow_intensity=.075,shadow_velocity={8,3},
   directional_intensity=.10,sun_direction={-.55,-.35,.76}}
@@ -19,7 +19,7 @@ function M.resolve(raw)
     assert(type(c[key])=='boolean','Invalid atmosphere toggle '..key)
   end
   assert(c.cloud_mode=='WORLD' or c.cloud_mode=='SCREEN' or c.cloud_mode=='OFF','Invalid cloud_mode')
-  numeric(c.cloud_density,0,.28,'cloud_density');numeric(c.cloud_opacity,0,.20,'cloud_opacity')
+  numeric(c.cloud_density,0,.75,'cloud_density');numeric(c.cloud_opacity,0,.80,'cloud_opacity')
   assert(type(c.cloud_velocity)=='table' and #c.cloud_velocity==2,'Invalid cloud_velocity')
   for _,v in ipairs(c.cloud_velocity) do numeric(v,-10,10,'cloud_velocity') end
   local p=assert(profiles[c.quality],'Atmosphere quality must be LOW, MEDIUM or HIGH')

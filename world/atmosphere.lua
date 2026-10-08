@@ -5,7 +5,9 @@ return {
   enabled=true, quality='MEDIUM',
   -- WORLD: positioned cloud/mist banks; SCREEN: previous 0.10.25; OFF: no clouds.
   cloud_mode='WORLD', local_mist=true,
-  cloud_density=.18, cloud_opacity=.11, cloud_velocity={2.2,.8},
+  -- Denser cloud cores; mist banks stay light. Safe ranges: density 0..0.75,
+  -- opacity 0..0.80. Restart flight after editing these values.
+  cloud_density=.58, cloud_opacity=.48, cloud_velocity={2.2,.8},
   haze=true, animated_water=true, cloud_shadows=true,
   directional_shading=false, wind_streaks=true,
   -- Distant terrain dissolves into the fixed panorama before the far clip edge.

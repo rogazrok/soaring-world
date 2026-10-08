@@ -18,6 +18,28 @@ function M.migrateLegacyRewards(data)
   local item=LEGACY_FIXED_REWARDS[active.areaId]
   if item then active.rewardItem=item;active.rewardProfileId='legacy' end
 end
+-- Preserve the current fixed Summit pickup once; later visits use instance loot.
+-- Historical completion/discovery stay intact and no RNG or steps are consumed.
+function M.migrateRepeatableSummit(data,save)
+  if type(data)~='table' or data['hidden.lifecycle.summitRepeatableVersion']==101 then return end
+  local prefix='hidden.rocky_summit_01.'
+  local key='SWR_ROCKY_SUMMIT_01_obj_1'
+  local active=data['hidden.lifecycle.active']
+  local taken=save and save.itemsTaken
+  if type(active)=='table' and active.areaId=='ROCKY_SUMMIT_01' then
+    if not active.rewardProfileId or active.rewardProfileId=='legacy' then
+      active.rewardItem=active.rewardItem or 'MAX_REVIVE'
+      active.rewardProfileId='legacy'
+      active.rewardClaimed=active.rewardClaimed==true or data[prefix..'rewardClaimed']==true
+        or (taken and taken[key]==true) or false
+      active.rewardSyncInitialized=true
+      if taken then taken[key]=active.rewardClaimed and true or nil end
+    end
+  elseif taken then taken[key]=nil end
+  data[prefix..'globallyCompleted']=nil
+  data[prefix..'rewardClaimed']=nil
+  data['hidden.lifecycle.summitRepeatableVersion']=101
+end
 -- All blocks come from existing generated Red tilesets; no new pixel assets.
 local BLOCKS={
   grove={T=2,['.']=27,g=1,r=6,s=33,f=40},
@@ -271,8 +293,8 @@ function M.validate(defs,anchors,config,cities)
   return errors
 end
 
-function M.load(read)
-  local defs=readTable(read,'world/hidden_areas.lua')
+function M.load(read,definitions)
+  local defs=definitions or readTable(read,'world/hidden_areas.lua')
   local anchors=readTable(read,'world/hidden_spawn_anchors.lua')
   local config=readTable(read,'world/hidden_spawn_config.lua')
   local cities=readTable(read,'world/locations.lua')
@@ -445,7 +467,7 @@ function M.forceSpawn(mod,reg,opts)
   M.ensure(mod,reg)
   local area=opts.areaId and reg.byId[opts.areaId] or nil
   if opts.areaId and not area then return nil,'unknown area' end
-  if not area and M.mewStatus(mod,reg).unlocked and randomInt(mod,1,100)<=7 then
+  if not area and M.mewStatus(mod,reg).unlocked and randomInt(mod,1,100)<=20 then
     area=reg.byId.FORGOTTEN_PIER_01
   end
   if area and area.kind=='special' and not (opts.debugBypass and reg.config.debugEnabled)
@@ -522,6 +544,25 @@ function M.onStep(mod,reg,eligible)
   set(mod,'steps',steps)
   if steps>=threshold then return M.forceSpawn(mod,reg) end
   return nil
+end
+-- A saved instance owns one gentle hint. Loading or opening the map does not
+-- consume it; acknowledge only after the flight UI has actually displayed it.
+function M.spawnNotice(mod,reg)
+  local a=M.active(mod,reg)
+  if not a or a.visited or a.noticeShown then return nil end
+  if a.areaId=='FORGOTTEN_PIER_01' then
+    return {instanceId=a.instanceId,areaId=a.areaId,lines={
+      'DRAGONITE senses', 'a strange presence', 'near VERMILION...'}}
+  end
+  return {instanceId=a.instanceId,areaId=a.areaId,lines={
+    'DRAGONITE senses', 'a hidden place', 'in KANTO...'}}
+end
+function M.acknowledgeNotice(mod,reg,notice)
+  local a=M.active(mod,reg)
+  if a and notice and a.instanceId==notice.instanceId and a.areaId==notice.areaId then
+    a.noticeShown=true;set(mod,'active',a);return true
+  end
+  return false
 end
 function M.activeLocation(mod,reg)
   local active=M.active(mod,reg)

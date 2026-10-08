@@ -1,5 +1,63 @@
 -- Shared departure cinema. PNG is the user's unmodified 9x48x48 v2 sheet.
 local M={}
+-- The companion remains engine-owned. Only temporary draw/warp state is scoped
+-- to this screen; persistent Pikachu flags and party data are never changed.
+function M.captureFollower(game,ow)
+  if require('src.core.GameVersion').get()~='yellow' then return nil end
+  local F=require('src.world.PikachuFollower')
+  local npc=F.current(ow)
+  local visible=false
+  for _,entity in ipairs(ow.entities or {}) do if entity==npc then visible=true end end
+  return {npc=npc,visible=visible,facing=npc and npc.facing,
+    warpHidden=ow.pikachuWarpHidden,showState=ow.pikachuShowState,F=F}
+end
+function M.hideFollower(ow,state)
+  if not state then return end
+  if type(ow.hidePikachuForWarp)=='function' then ow:hidePikachuForWarp()
+  else ow.pikachuWarpHidden=true;state.F.setVisible(ow,false) end
+end
+function M.restoreFollower(game,ow,state,landed)
+  if not state or state.restored then return end
+  state.restored=true
+  -- A different map may have replaced this follower during an error recovery.
+  -- Its new visibility and placement belong to the engine, not the old token.
+  if state.F.current(ow)~=state.npc then return end
+  ow.pikachuWarpHidden=state.warpHidden;ow.pikachuShowState=state.showState
+  if landed then
+    local save=game.save or {};local flags=save.flags or {}
+    local allowed=flags.EVENT_GOT_STARTER and save.pikachuInBall~=true
+      and (save.pikachuInBall~=nil or flags.EVENT_BATTLED_RIVAL_IN_OAKS_LAB)
+      and not save.onBike and not ow.player.surfing
+    local healthy=false
+    for _,mon in ipairs(save.party or {}) do
+      if mon.species=='PIKACHU' and (mon.hp or 0)>0 then healthy=true end
+    end
+    if state.npc and allowed and healthy and (state.visible or state.warpHidden) then
+      -- A regular custom warp has no Fly spawn state; use native trailing placement.
+      local spawnState=state.showState
+      if spawnState==nil or spawnState==0 or spawnState==3 then spawnState=2 end
+      ow.pikachuShowState=spawnState
+      if type(ow.showPikachuAfterWarp)=='function' then ow:showPikachuAfterWarp()
+      else
+        ow.pikachuWarpHidden=nil;ow.pikachuShowState=nil
+        state.F.setVisible(ow,true);state.F.placeAtSpawnState(ow,spawnState)
+      end
+      -- The native trailing cell can be blocked at a narrow landing. Try the
+      -- other native placement states before allowing the engine's overlap
+      -- fallback; every candidate still uses its bounds/walkability checks.
+      for _,candidate in ipairs({1,4,5,6}) do
+        if state.npc.cellX~=ow.player.cellX or state.npc.cellY~=ow.player.cellY then break end
+        state.F.placeAtSpawnState(ow,candidate)
+      end
+    else
+      ow.pikachuWarpHidden=nil;ow.pikachuShowState=nil
+      state.F.setVisible(ow,false)
+    end
+  else
+    state.F.setVisible(ow,state.visible)
+    if state.npc then state.npc.facing=state.facing end
+  end
+end
 local phases={{'fade',.35},{'whistle',.50},{'arrival',.56},{'wait',.18},
   {'jump',16/60},{'board',.16},{'takeoff',.56},{'cover',.16}}
 function M.pose(time)
@@ -41,6 +99,7 @@ function M.new(game,mod,ow,onDone,onAbort,landing,nightAmount)
   image:setFilter('nearest','nearest')
   local quads={};for n=1,9 do quads[n]=love.graphics.newQuad((n-1)*48,0,48,48,432,48) end
   local player=ow.player
+  local follower=M.captureFollower(game,ow)
   local saved={px=player.px,py=player.py,facing=player.facing,hidden=ow.playerHidden,
     locked=player.inputLocked,hopFrames=player.hopFrames,hopTotal=player.hopTotal,
     ledgeHop=player.ledgeHop,onBike=player.onBike}
@@ -50,6 +109,7 @@ function M.new(game,mod,ow,onDone,onAbort,landing,nightAmount)
     time=0,pose=pose(0),ow=ow,nightAmount=nightAmount}
   local Music=require('src.core.Music')
   function screen:enter()
+    M.hideFollower(ow,follower)
     player.inputLocked=true;player.onBike=false;player.facing=landing and 'left' or 'right'
     ow.playerHidden=landing or false
     if not landing then Music.fadeOut(3) end
@@ -123,6 +183,7 @@ function M.new(game,mod,ow,onDone,onAbort,landing,nightAmount)
     player.inputLocked=saved.locked;ow.playerHidden=saved.hidden
     player.hopFrames,player.hopTotal,player.ledgeHop=saved.hopFrames,saved.hopTotal,saved.ledgeHop
     player.onBike=saved.onBike
+    M.restoreFollower(game,ow,follower,self.finished and landing)
     for _,quad in ipairs(quads) do quad:release() end
     if not self.finished and onAbort then onAbort() end
   end
